@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "515861029812",
+    "project_id": "drawing-app-66825",
+    "storage_bucket": "drawing-app-66825.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:515861029812:android:b4479dd9701d073ee108e1",
+        "android_client_info": {
+          "package_name": "com.matrix.drawing"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "515861029812-4osenupmknmtoeu5k2h44lqndhpuct2m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.matrix.drawing",
+            "certificate_hash": "2813f5369e6fee36215cd55017480c253e62e8cc"
+          }
+        },
+        {
+          "client_id": "515861029812-72296a12eodbsgle680io37ho1fqhu6q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCgfNG25Un1fhOy14MPK-hlrRqT5xKhw3U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "515861029812-72296a12eodbsgle680io37ho1fqhu6q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

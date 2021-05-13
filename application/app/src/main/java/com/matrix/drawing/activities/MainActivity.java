@@ -1,7 +1,11 @@
 package com.matrix.drawing.activities;
 
+import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,18 +20,25 @@ import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.dialog.MaterialDialogs;
 import com.google.android.material.slider.RangeSlider;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.matrix.drawing.R;
 import com.matrix.drawing.views.PaintView;
 
 import java.io.OutputStream;
 
+import petrov.kristiyan.colorpicker.ColorPicker;
+
 public class MainActivity extends AppCompatActivity {
 
     private PaintView paint;
     private RangeSlider rangeSlider;
+    private Uri uri;
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
@@ -35,36 +46,78 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        paint = (PaintView) findViewById(R.id.paint_view);
-        rangeSlider = (RangeSlider) findViewById(R.id.rangebar);
-        ImageButton undo = (ImageButton) findViewById(R.id.btn_undo);
-        ImageButton save = (ImageButton) findViewById(R.id.btn_save);
-        ImageButton redo = (ImageButton) findViewById(R.id.btn_redo);
-        ImageButton stroke = (ImageButton) findViewById(R.id.btn_brush);
+        paint = findViewById(R.id.paint_view);
+        rangeSlider = findViewById(R.id.rangebar);
+        ImageButton undo = findViewById(R.id.btn_undo);
+        ImageButton save = findViewById(R.id.btn_save);
+        ImageButton redo = findViewById(R.id.btn_redo);
+        ImageButton stroke = findViewById(R.id.btn_brush);
+        ImageButton color = findViewById(R.id.btn_color);
+        ImageButton emoji = findViewById(R.id.btn_emoji);
+        ImageButton eraser = findViewById(R.id.btn_eraser);
+
 
         undo.setOnClickListener(view -> paint.undo());
+        redo.setOnClickListener(view -> paint.redo());
+
+        eraser.setOnClickListener(view -> {
+            paint.eraser();
+        });
+
+        emoji.setOnClickListener(view -> {
+            Toast.makeText(getApplicationContext(), "Under Progress!", Toast.LENGTH_LONG).show();
+        });
 
         save.setOnClickListener(view -> {
-
             Bitmap bmp = paint.save();
-
             OutputStream imageOutStream = null;
             ContentValues cv = new ContentValues();
             cv.put(MediaStore.Images.Media.DISPLAY_NAME, "drawing.png");
             cv.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
             cv.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
 
-            Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv);
+            uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv);
             try {
                 imageOutStream = getContentResolver().openOutputStream(uri);
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, imageOutStream);
                 imageOutStream.close();
+                Toast.makeText(getApplicationContext(), "Saved to gallery!", Toast.LENGTH_LONG).show();
+
+                new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle("Save to Cloud?")
+                        .setMessage("Do you want to save the image to cloud?")
+                        .setPositiveButton("Yes", (dialogInterface, i) -> {
+                            uploadFile(uri);
+                        })
+                        .setNegativeButton("CANCEL", (dialogInterface, i) -> {
+                            dialogInterface.dismiss();
+                        })
+                        .show();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
 
+        color.setOnClickListener(view -> {
+            final ColorPicker colorPicker = new ColorPicker(MainActivity.this);
+            colorPicker.setOnFastChooseColorListener(new ColorPicker.OnFastChooseColorListener() {
+                @Override
+                public void setOnFastChooseColorListener(int position, int color1) {
+                    paint.setColor(color1);
+                }
+
+                @Override
+                public void onCancel() {
+                    colorPicker.dismissDialog();
+                }
+            })
+                    .setColumns(5)
+                    .setDefaultColorButton(Color.parseColor("#000000"))
+                    .show();
+        });
+
         stroke.setOnClickListener(view -> {
+            paint.restoreColor();
             if (rangeSlider.getVisibility() == View.VISIBLE)
                 rangeSlider.setVisibility(View.GONE);
             else
@@ -88,9 +141,33 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void uploadFile(Uri uri) {
+        final ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle("Uploading");
+        progressDialog.show();
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+
+        StorageReference riversRef = storage.getReference().child("images").child("Paint_" + System.currentTimeMillis() / 1000 + ".png");
+
+        riversRef.putFile(uri)
+                .addOnSuccessListener(taskSnapshot -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(getApplicationContext(), "File Uploaded ", Toast.LENGTH_LONG).show();
+                })
+                .addOnFailureListener(exception -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(getApplicationContext(), exception.getMessage(), Toast.LENGTH_LONG).show();
+                })
+                .addOnProgressListener(taskSnapshot -> {
+                    double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+
+                    progressDialog.setMessage("Uploaded " + ((int) progress) + "%...");
+                });
+    }
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main_menu, menu);
         return true;
     }
@@ -98,9 +175,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        switch (id){
+        switch (id) {
             case R.id.logout:
-                Toast.makeText(getApplicationContext(),"logged out",Toast.LENGTH_LONG).show();
+                FirebaseAuth.getInstance().signOut();
+                Toast.makeText(getApplicationContext(), "logged out", Toast.LENGTH_LONG).show();
+                Intent i = new Intent(MainActivity.this,
+                        LoginActivity.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+                finish();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

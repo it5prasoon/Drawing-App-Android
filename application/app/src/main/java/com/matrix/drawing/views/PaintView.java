@@ -20,11 +20,14 @@ public class PaintView extends View {
     private Path mPath;
     private final Paint mPaint;
     private final ArrayList<Brush> paths = new ArrayList<>();
+    private final ArrayList<Brush> undonePaths = new ArrayList<>();
     private int currentColor;
     private int strokeWidth;
     private Bitmap mBitmap;
     private Canvas mCanvas;
     private final Paint mBitmapPaint = new Paint(Paint.DITHER_FLAG);
+    public int prevColor;
+
 
     public PaintView(Context context, Paint mPaint) {
         super(context, null);
@@ -54,13 +57,31 @@ public class PaintView extends View {
         currentColor = color;
     }
 
+    public void restoreColor() {
+        if (prevColor != 0) {
+            currentColor = prevColor;
+        }
+    }
+
     public void setStrokeWidth(int width) {
         strokeWidth = width;
     }
 
+    public void eraser() {
+        prevColor = currentColor;
+        currentColor = Color.WHITE;
+    }
+
     public void undo() {
         if (paths.size() != 0) {
-            paths.remove(paths.size() - 1);
+            undonePaths.add(paths.remove(paths.size() - 1));
+            invalidate();
+        }
+    }
+
+    public void redo() {
+        if (undonePaths.size() > 0) {
+            paths.add(undonePaths.remove(undonePaths.size() - 1));
             invalidate();
         }
     }
@@ -68,6 +89,7 @@ public class PaintView extends View {
     public Bitmap save() {
         return mBitmap;
     }
+
 
     @Override
     protected void onDraw(Canvas canvas) {

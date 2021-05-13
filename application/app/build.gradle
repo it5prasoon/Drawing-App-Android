@@ -46,4 +46,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore:23.0.0'
     implementation 'com.google.firebase:firebase-storage:20.0.0'
+
+    // color
+    implementation 'petrov.kristiyan:colorpicker-library:1.1.10'
+
 }

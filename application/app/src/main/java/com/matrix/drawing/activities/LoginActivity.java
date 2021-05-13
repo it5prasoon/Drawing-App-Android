@@ -26,14 +26,13 @@ public class LoginActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private EditText edtPhone, edtOTP;
     private String verificationId;
-    private FirebaseFirestore db;
     private String phone;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
 
         edtPhone = findViewById(R.id.idEdtPhoneNumber);
         edtOTP = findViewById(R.id.idEdtOtp);
@@ -109,15 +108,5 @@ public class LoginActivity extends AppCompatActivity {
     private void verifyCode(String code) {
         PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationId, code);
         signInWithCredential(credential);
-
-        Map<String, Object> map = new HashMap<>();
-        map.put("default", "default");
-
-        db.collection("users").document(phone)
-                .set(map)
-                .addOnSuccessListener(documentReference ->
-                        Toast.makeText(LoginActivity.this, "Added to database.", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e ->
-                        Toast.makeText(LoginActivity.this, "Failed to add to database. \n" + e, Toast.LENGTH_SHORT).show());
     }
 }

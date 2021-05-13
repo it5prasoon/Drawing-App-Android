@@ -5,8 +5,13 @@
 
     <item
         android:id="@+id/logout"
-        app:showAsAction="ifRoom"
+        app:showAsAction="never"
         android:title="Logout" />
+
+    <item
+        android:id="@+id/allImages"
+        app:showAsAction="ifRoom"
+        android:title="Common Board" />
 
 
 </menu>

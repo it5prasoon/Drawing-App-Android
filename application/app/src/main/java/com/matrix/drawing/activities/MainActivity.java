@@ -11,6 +11,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,16 +22,22 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.dialog.MaterialDialogs;
 import com.google.android.material.slider.RangeSlider;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.matrix.drawing.R;
+import com.matrix.drawing.data.ImageUploadInfo;
 import com.matrix.drawing.views.PaintView;
 
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import petrov.kristiyan.colorpicker.ColorPicker;
 
@@ -39,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private PaintView paint;
     private RangeSlider rangeSlider;
     private Uri uri;
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
@@ -153,6 +161,17 @@ public class MainActivity extends AppCompatActivity {
                 .addOnSuccessListener(taskSnapshot -> {
                     progressDialog.dismiss();
                     Toast.makeText(getApplicationContext(), "File Uploaded ", Toast.LENGTH_LONG).show();
+                    riversRef.getDownloadUrl().addOnSuccessListener(downloadPhotoUrl -> {
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("Paint_" + System.currentTimeMillis() / 1000 + ".png", downloadPhotoUrl.toString());
+
+                        db.collection("image-link").document("all-images")
+                                .set(map, SetOptions.merge())
+                                .addOnSuccessListener(documentReference ->
+                                        Toast.makeText(MainActivity.this, "Added to database.", Toast.LENGTH_SHORT).show())
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(MainActivity.this, "Failed to add to database. \n" + e, Toast.LENGTH_SHORT).show());
+                    });
                 })
                 .addOnFailureListener(exception -> {
                     progressDialog.dismiss();
@@ -185,6 +204,11 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(i);
                 finish();
                 return true;
+            case R.id.allImages:
+                Intent intent = new Intent(MainActivity.this,
+                        DisplayImages.class);
+                startActivity(intent);
+
             default:
                 return super.onOptionsItemSelected(item);
         }
